@@ -9,15 +9,18 @@ import (
 	"io/ioutil"
 	"net/http"
 	"os"
+	"os/exec"
 )
 
 var client = marionette.NewClient()
 
 func main() {
+	go spawnFf()
 	initClient()
 	// Will block if we don't run concurrently
 	go serveScript()
     execute()
+	quit()
 }
 
 // TODO: Check whether Firefox is running, and start it if not
@@ -52,6 +55,12 @@ func check(e error) {
         panic(e)
     }
 }
+
+func spawnFf() {
+	ffCmd := exec.Command("firefox", "-P", "marionette", "-no-remote", "-headless","-marionette")
+	ffCmd.Start()
+}
+
 
 func execute() {
 	script, err := ioutil.ReadFile("./js/exec.js")
