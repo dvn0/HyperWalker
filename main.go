@@ -57,7 +57,9 @@ func check(e error) {
 }
 
 func spawnFf() {
-	ffCmd := exec.Command("firefox", "-P", "marionette", "-no-remote", "-headless","-marionette")
+	ffProfile := exec.Command("firefox", "-no-remote", "-CreateProfile","hyperwalker")
+	ffProfile.Start()
+	ffCmd := exec.Command("firefox", "-P", "hyperwalker", "-no-remote", "-headless","-marionette")
 	ffCmd.Start()
 }
 
