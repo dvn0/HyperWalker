@@ -40,11 +40,10 @@ func initClient() {
 }
 
 // We have to serve the JS scripts via HTTP
-// TODO: Pick a better port
 // TODO: Figure out how to embed the files in the binary
 func serveScript() {
 	http.Handle("/", http.FileServer(http.Dir("./freezedry")))
-	if err := http.ListenAndServe(":5000", nil); err != nil {
+	if err := http.ListenAndServe(":0", nil); err != nil {
 		panic(err)
 	}
 }
