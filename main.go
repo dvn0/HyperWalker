@@ -79,16 +79,21 @@ func execute() {
 	data := gojsonq.New().JSONString(snap.Value).Find("value")
 	//println(data.(string))
 
-	f, err := os.Create("/tmp/dat1.html")
+	f, err := ioutil.TempFile(os.TempDir(), "hyperwalker-*.html")
+	if err != nil {
+	    fmt.Println("Cannot create temporary file", err)
+	}
 	check(err)
 	defer f.Close()
-	html, err := f.WriteString(data.(string))
-    fmt.Printf("wrote %d bytes to /tmp/dat1.html\n", html)
+	if _, err := f.WriteString(data.(string)); err != nil {
+		fmt.Println("Cannot write to temporary file", err)
+	}
+    fmt.Printf("wrote snapshot to %s\n", f.Name())
 	f.Sync()
 	// Open up the html file
 	// TODO: remove the i/o operation and open HTML from memory
 	webview.Open("Minimal webview example",
-		"file:///tmp/dat1.html", 800, 600, true)
+		"file:///" + f.Name(), 800, 600, true)
 }
 
 // For saving a screenshot.
