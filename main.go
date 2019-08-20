@@ -4,17 +4,30 @@ import (
 	marionette "github.com/njasm/marionette_client"
 	webview "github.com/zserge/webview"
 	"github.com/thedevsaddam/gojsonq"
+	"github.com/mitchellh/go-homedir"
 	"bufio"
 	"fmt"
 	"io/ioutil"
+	"log"
 	"net/http"
 	"os"
 	"os/exec"
 )
 
 var client = marionette.NewClient()
+var userHome, err = homedir.Dir()
+
 
 func main() {
+	fmt.Println(userHome)
+	logFile, err := os.OpenFile(userHome + "/.hyperwalker/logs/hyperwalker.log", os.O_RDWR | os.O_CREATE | os.O_APPEND, 0600)
+	if err != nil {
+		log.Fatalf("error opening file: %v", err)
+	}
+	defer logFile.Close()
+
+	log.SetOutput(logFile)
+	log.Println("This is a test log entry")
 	go spawnFf()
 	initClient()
 	// Will block if we don't run concurrently
@@ -45,16 +58,10 @@ func initClient() {
 func serveScript() {
 	http.Handle("/", http.FileServer(http.Dir("./freezedry")))
 	if err := http.ListenAndServe(":5000", nil); err != nil {
-		panic(err)
+		log.Fatal("Cannot bind to port 5000", err)
 	}
 }
 
-// Trying this out...
-func check(e error) {
-    if e != nil {
-        panic(e)
-    }
-}
 
 func spawnFf() {
 	ffProfile := exec.Command("firefox", "-no-remote", "-CreateProfile","hyperwalker")
@@ -73,7 +80,7 @@ func execute() {
 	sandbox := false    // new Sandbox
 	snap, err := client.ExecuteScript(scriptstr, args, timeout, sandbox)
 	if err != nil {
-	    fmt.Println(err)
+		log.Fatal("Error executing script", err)
 	}
 	// HTML is returned as a JSON blob, so we must parse it
 	data := gojsonq.New().JSONString(snap.Value).Find("value")
@@ -81,12 +88,11 @@ func execute() {
 
 	f, err := ioutil.TempFile(os.TempDir(), "hyperwalker-*.html")
 	if err != nil {
-	    fmt.Println("Cannot create temporary file", err)
+	    log.Fatal("Cannot create temporary file", err)
 	}
-	check(err)
 	defer f.Close()
 	if _, err := f.WriteString(data.(string)); err != nil {
-		fmt.Println("Cannot write to temporary file", err)
+	    log.Fatal("Cannot write to temporary file", err)
 	}
     fmt.Printf("wrote snapshot to %s\n", f.Name())
 	f.Sync()
@@ -101,7 +107,7 @@ func execute() {
 func screenshot() {
 	screenshot, err := client.Screenshot()
 	if err != nil {
-		fmt.Println(err)
+		log.Fatal("wtf", err)
 	}
 	fmt.Println(screenshot)
 }
