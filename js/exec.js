@@ -8,5 +8,5 @@ function addScript(uri) {
     });
 }
 return (
-    addScript("http://127.0.0.1:5000/standalone.js").
+    addScript("http://127.0.0.1:61628/js/freezedry/standalone.js").
         then ((html) => freezeDry.default()));

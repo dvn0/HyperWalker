@@ -5,6 +5,8 @@ import (
 	webview "github.com/zserge/webview"
 	"github.com/thedevsaddam/gojsonq"
 	"github.com/mitchellh/go-homedir"
+	"github.com/rakyll/statik/fs"
+	_ "./statik" // TODO: Replace with the absolute import path
 	"bufio"
 	"fmt"
 	"io/ioutil"
@@ -27,22 +29,23 @@ func main() {
 	defer logFile.Close()
 
 	log.SetOutput(logFile)
-	log.Println("This is a test log entry")
+	log.Println("HyperWalker is running")
 	go spawnFf()
+	go serveScript()
 	initClient()
 	// Will block if we don't run concurrently
-	go serveScript()
     execute()
 	quit()
 }
 
-// TODO: Check whether Firefox is running, and start it if not
-// Start Firefox in marrionette mode like this:
-// /path/to/firefox -P marionette -no-remote -headless -marionette -safe-mode
-// "-P" is for selecting a profile, it can be called anything
-// You may need to go to about:profiles and create one first
-// After the profile exists you need to copy the file config/user.js to:
-// $HOME/.mozilla/firefox/<profile-name>/user.js
+// TODO: Check whether Firefox with marrionette is already running
+func spawnFf() {
+	ffProfile := exec.Command("firefox", "-no-remote", "-CreateProfile","hyperwalker")
+	ffProfile.Start()
+	ffCmd := exec.Command("firefox", "-P", "hyperwalker", "-no-remote", "-headless"," -private-window", "-marionette")
+	ffCmd.Start()
+}
+
 func initClient() {
 	reader := bufio.NewReader(os.Stdin)
 	fmt.Print("Navigate to (URI): ")
@@ -56,24 +59,29 @@ func initClient() {
 // TODO: Pick a better port
 // TODO: Figure out how to embed the files in the binary
 func serveScript() {
-	http.Handle("/", http.FileServer(http.Dir("./freezedry")))
-	if err := http.ListenAndServe(":5000", nil); err != nil {
-		log.Fatal("Cannot bind to port 5000", err)
+	statikFS, err := fs.New()
+	if err != nil {
+		log.Fatal(err)
+	}
+	http.Handle("/js/", http.StripPrefix("/js/", http.FileServer(statikFS)))
+	if err := http.ListenAndServe(":61628", nil); err != nil {
+		log.Fatalf("Problem starting HTTP server. Go says: ", err)
 	}
 }
 
 
-func spawnFf() {
-	ffProfile := exec.Command("firefox", "-no-remote", "-CreateProfile","hyperwalker")
-	ffProfile.Start()
-	ffCmd := exec.Command("firefox", "-P", "hyperwalker", "-no-remote", "-headless","-marionette")
-	ffCmd.Start()
-}
-
-
 func execute() {
-	script, err := ioutil.ReadFile("./js/exec.js")
-	scriptstr := string(script)
+	resp, err := http.Get("http://127.0.0.1:61628/js/exec.js")
+    if err != nil {
+        panic(err)
+    }
+    defer resp.Body.Close()
+	bodyBytes, err := ioutil.ReadAll(resp.Body)
+	if err != nil {
+		log.Fatalf("Something bad", err)
+	}
+
+	scriptstr := string(bodyBytes)
 	args := []interface{}{}  // arguments to be passed to the function
 	timeoutint := 50000     // milliseconds
 	timeout := uint(timeoutint)     // milliseconds
