@@ -21,7 +21,6 @@ var userHome, err = homedir.Dir()
 
 
 func main() {
-	fmt.Println(userHome)
 	logFile, err := os.OpenFile(userHome + "/.hyperwalker/logs/hyperwalker.log", os.O_RDWR | os.O_CREATE | os.O_APPEND, 0600)
 	if err != nil {
 		log.Fatalf("error opening file: %v", err)
