@@ -1,19 +1,26 @@
 package main
 
 import (
+	"bufio"
+	"fmt"
+	"io/ioutil"
+	"log"
+	"io"
+	"net/http"
+	"os"
+	"os/exec"
+	"strings"
+)
+
+import (
+	"golang.org/x/net/html"
 	marionette "github.com/njasm/marionette_client"
 	webview "github.com/zserge/webview"
 	"github.com/thedevsaddam/gojsonq"
 	"github.com/mitchellh/go-homedir"
 	"github.com/rakyll/statik/fs"
+	"github.com/kennygrant/sanitize"
 	_ "./statik" // TODO: Replace with the absolute import path
-	"bufio"
-	"fmt"
-	"io/ioutil"
-	"log"
-	"net/http"
-	"os"
-	"os/exec"
 )
 
 var client = marionette.NewClient()
@@ -30,10 +37,11 @@ func main() {
 	log.SetOutput(logFile)
 	log.Println("HyperWalker is running")
 	go spawnFf()
-	go serveScript()
-	initClient()
 	// Will block if we don't run concurrently
-    execute()
+	go serveScript()
+//    TestHtmlToRst()
+	initClient()
+	openView()
 	quit()
 }
 
@@ -54,6 +62,11 @@ func initClient() {
 	client.Navigate(uri)
 }
 
+func continuedNav(uri string) {
+	client.Navigate(uri)
+	openView()
+}
+
 // We have to serve the JS scripts via HTTP
 // TODO: Pick a better port
 // TODO: Figure out how to embed the files in the binary
@@ -63,13 +76,13 @@ func serveScript() {
 		log.Fatal(err)
 	}
 	http.Handle("/js/", http.StripPrefix("/js/", http.FileServer(statikFS)))
-	if err := http.ListenAndServe(":61628", nil); err != nil {
+	if err := http.ListenAndServe("127.0.0.1:61628", nil); err != nil {
 		log.Fatalf("Problem starting HTTP server. Go says: ", err)
 	}
 }
 
 
-func execute() {
+func execute() (string, string) {
 	resp, err := http.Get("http://127.0.0.1:61628/js/exec.js")
     if err != nil {
         panic(err)
@@ -93,7 +106,20 @@ func execute() {
 	data := gojsonq.New().JSONString(snap.Value).Find("value")
 	//println(data.(string))
 
-	f, err := ioutil.TempFile(os.TempDir(), "hyperwalker-*.html")
+	// Get title
+	reader := strings.NewReader(data.(string))
+	title, true := GetHtmlTitle(reader);
+	if true{
+		fmt.Println("Displaying Page: " + title)
+	}
+	sanTitle := sanitize.Path(title)
+	/*; true {
+		fmt.Println(title)
+	} else {
+		fmt.Println("Fail to get HTML title"); log.Printf("Fail to get HTML title")
+	}
+*/
+	f, err := ioutil.TempFile(os.TempDir(), sanTitle + "-hyperwalker-*.html")
 	if err != nil {
 	    log.Fatal("Cannot create temporary file", err)
 	}
@@ -101,12 +127,87 @@ func execute() {
 	if _, err := f.WriteString(data.(string)); err != nil {
 	    log.Fatal("Cannot write to temporary file", err)
 	}
-    fmt.Printf("wrote snapshot to %s\n", f.Name())
+	fileName := f.Name()
+    fmt.Printf("wrote snapshot to %s\n", fileName)
 	f.Sync()
-	// Open up the html file
-	// TODO: remove the i/o operation and open HTML from memory
-	webview.Open("Minimal webview example",
-		"file:///" + f.Name(), 800, 600, true)
+	return fileName, title
+}
+
+func handleRPC(w webview.WebView, data string) {
+	continuedNav(data)
+}
+
+func isTitleElement(n *html.Node) bool {
+	return n.Type == html.ElementNode && n.Data == "title" 
+}
+
+func traverse(n *html.Node) (string, bool) {
+	if isTitleElement(n) {
+		return n.FirstChild.Data, true
+	}
+
+	for c := n.FirstChild; c != nil; c = c.NextSibling {
+		result, ok := traverse(c)
+		if ok {
+			return result, ok
+		}
+	}
+
+	return "", false
+}
+
+func GetHtmlTitle(r io.Reader) (string, bool) {
+	doc, err := html.Parse(r)
+	if err != nil {
+		panic("Fail to parse html")
+	}
+
+	return traverse(doc)
+}
+
+func cspMod() (string, string){
+	snapshot, title := execute()
+	file, err := ioutil.ReadFile(snapshot)
+	if err != nil {
+		log.Printf("Failed to open snapshot for CSP modification")
+	}
+	new := strings.Replace(string(file), "none", "unsafe-inline", 1)
+	err = ioutil.WriteFile(snapshot, []byte(new), 0600)
+	if err != nil {
+		log.Printf("Failed to open snapshot for CSP modification")
+	}
+	return snapshot, title
+}
+
+func openView() {
+
+	snapshot, title := cspMod()
+	w := webview.New(webview.Settings{
+		URL: "file:///" + snapshot,
+		Title: title,
+		Resizable: true,
+		Debug: true,
+		ExternalInvokeCallback: handleRPC,
+	})
+	webview.Debug()
+	defer w.Exit()
+	w.Dispatch(func() {
+		// Inject CSS
+		// Inject JS
+		bean, err := http.Get("http://127.0.0.1:61628/js/intercept.js")
+		if err != nil {
+			panic(err)
+		}
+		defer bean.Body.Close()
+		boBytes, err := ioutil.ReadAll(bean.Body)
+		if err != nil {
+			log.Fatalf("Something bad", err)
+		}
+
+		scriptstr := string(boBytes)
+		w.Eval(scriptstr)
+	})
+	w.Run()
 }
 
 // For saving a screenshot.
