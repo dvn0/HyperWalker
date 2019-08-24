@@ -1,3 +1,5 @@
+//go:generate statik -src=./js
+
 package main
 
 import (
