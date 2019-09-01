@@ -41,7 +41,6 @@ func main() {
 	go spawnFf()
 	// Will block if we don't run concurrently
 	go serveScript()
-//    TestHtmlToRst()
 	initClient()
 	openView()
 	quit()
@@ -70,8 +69,6 @@ func continuedNav(uri string) {
 }
 
 // We have to serve the JS scripts via HTTP
-// TODO: Pick a better port
-// TODO: Figure out how to embed the files in the binary
 func serveScript() {
 	statikFS, err := fs.New()
 	if err != nil {
@@ -194,7 +191,6 @@ func openView() {
 	webview.Debug()
 	defer w.Exit()
 	w.Dispatch(func() {
-		// Inject CSS
 		// Inject JS
 		bean, err := http.Get("http://127.0.0.1:61628/js/intercept.js")
 		if err != nil {
