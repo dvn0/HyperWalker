@@ -17,7 +17,6 @@ import (
 import (
 	"golang.org/x/net/html"
 	marionette "github.com/njasm/marionette_client"
-	webview "github.com/zserge/webview"
 	"github.com/thedevsaddam/gojsonq"
 	"github.com/mitchellh/go-homedir"
 	"github.com/rakyll/statik/fs"
@@ -42,7 +41,7 @@ func main() {
 	// Will block if we don't run concurrently
 	go serveScript()
 	initClient()
-	openView()
+	execute()
 	quit()
 }
 
@@ -61,11 +60,6 @@ func initClient() {
 	client.Connect("127.0.0.1", 2828) // this are the default marionette values for hostname, and port 
 	client.NewSession("", nil) // let marionette generate the Session ID with it's default Capabilities
 	client.Navigate(uri)
-}
-
-func continuedNav(uri string) {
-	client.Navigate(uri)
-	openView()
 }
 
 // We have to serve the JS scripts via HTTP
@@ -109,7 +103,7 @@ func execute() (string, string) {
 	reader := strings.NewReader(data.(string))
 	title, true := GetHtmlTitle(reader);
 	if true{
-		fmt.Println("Displaying Page: " + title)
+		fmt.Println("Saving Page: " + title)
 	}
 	sanTitle := sanitize.Path(title)
 	/*; true {
@@ -130,10 +124,6 @@ func execute() (string, string) {
     fmt.Printf("wrote snapshot to %s\n", fileName)
 	f.Sync()
 	return fileName, title
-}
-
-func handleRPC(w webview.WebView, data string) {
-	continuedNav(data)
 }
 
 func isTitleElement(n *html.Node) bool {
@@ -162,50 +152,6 @@ func GetHtmlTitle(r io.Reader) (string, bool) {
 	}
 
 	return traverse(doc)
-}
-
-func cspMod() (string, string){
-	snapshot, title := execute()
-	file, err := ioutil.ReadFile(snapshot)
-	if err != nil {
-		log.Printf("Failed to open snapshot for CSP modification")
-	}
-	new := strings.Replace(string(file), "none", "unsafe-inline", 1)
-	err = ioutil.WriteFile(snapshot, []byte(new), 0600)
-	if err != nil {
-		log.Printf("Failed to open snapshot for CSP modification")
-	}
-	return snapshot, title
-}
-
-func openView() {
-
-	snapshot, title := cspMod()
-	w := webview.New(webview.Settings{
-		URL: "file:///" + snapshot,
-		Title: title,
-		Resizable: true,
-		Debug: true,
-		ExternalInvokeCallback: handleRPC,
-	})
-	webview.Debug()
-	defer w.Exit()
-	w.Dispatch(func() {
-		// Inject JS
-		bean, err := http.Get("http://127.0.0.1:61628/js/intercept.js")
-		if err != nil {
-			panic(err)
-		}
-		defer bean.Body.Close()
-		boBytes, err := ioutil.ReadAll(bean.Body)
-		if err != nil {
-			log.Fatalf("Something bad", err)
-		}
-
-		scriptstr := string(boBytes)
-		w.Eval(scriptstr)
-	})
-	w.Run()
 }
 
 // For saving a screenshot.

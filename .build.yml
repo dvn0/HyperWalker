@@ -1,7 +1,6 @@
 image: archlinux                                                                         
 packages:                                                                                       
   - go
-  - webkit2gtk
 sources:                                                                                        
   - https://git.sr.ht/~dvn/HyperWalker                                                          
 tasks:                                                                                          
