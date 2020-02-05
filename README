@@ -1,3 +1,14 @@
+===========
+HyperWalker
+===========
+
+Hypertext organizer...
+
+Current plan is to switch to using Netsurf as the viewer, and to refactor
+so that the firefox/marionette logic is decoupled from the main logic, thus
+generalizing the way HyperWalker gets documents.
+
+
 Requirements
 ============
 
