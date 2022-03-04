@@ -27,7 +27,7 @@ var userHome, err = homedir.Dir()
 
 
 func main() {
-	logFile, err := os.OpenFile(userHome + "/.hyperwalker/logs/hyperwalker.log", os.O_RDWR | os.O_CREATE | os.O_APPEND, 0600)
+	logFile, err := os.OpenFile(userHome+"/.hyperwalker/logs/hyperwalker.log", os.O_RDWR|os.O_CREATE|os.O_APPEND, 0600)
 	if err != nil {
 		log.Fatalf("error opening file: %v", err)
 	}
@@ -78,20 +78,20 @@ func serveScript() {
 
 func execute() (string, string) {
 	resp, err := http.Get("http://127.0.0.1:61628/js/exec.js")
-    if err != nil {
-        panic(err)
-    }
-    defer resp.Body.Close()
+	if err != nil {
+		panic(err)
+	}
+	defer resp.Body.Close()
 	bodyBytes, err := ioutil.ReadAll(resp.Body)
 	if err != nil {
 		log.Fatalf("Something bad", err)
 	}
 
 	scriptstr := string(bodyBytes)
-	args := []interface{}{}  // arguments to be passed to the function
-	timeoutint := 50000     // milliseconds
-	timeout := uint(timeoutint)     // milliseconds
-	sandbox := false    // new Sandbox
+	args := []interface{}{}     // arguments to be passed to the function
+	timeoutint := 50000         // milliseconds
+	timeout := uint(timeoutint) // milliseconds
+	sandbox := false            // new Sandbox
 	snap, err := client.ExecuteScript(scriptstr, args, timeout, sandbox)
 	if err != nil {
 		log.Fatal("Error executing script", err)
@@ -102,8 +102,8 @@ func execute() (string, string) {
 
 	// Get title
 	reader := strings.NewReader(data.(string))
-	title, true := GetHtmlTitle(reader);
-	if true{
+	title, true := GetHtmlTitle(reader)
+	if true {
 		fmt.Println("Saving Page: " + title)
 	}
 	sanTitle := sanitize.Path(title)
@@ -112,23 +112,23 @@ func execute() (string, string) {
 	} else {
 		fmt.Println("Fail to get HTML title"); log.Printf("Fail to get HTML title")
 	}
-*/
-	f, err := ioutil.TempFile(os.TempDir(), sanTitle + "-hyperwalker-*.html")
+	*/
+	f, err := ioutil.TempFile(os.TempDir(), sanTitle+"-hyperwalker-*.html")
 	if err != nil {
-	    log.Fatal("Cannot create temporary file", err)
+		log.Fatal("Cannot create temporary file", err)
 	}
 	defer f.Close()
 	if _, err := f.WriteString(data.(string)); err != nil {
-	    log.Fatal("Cannot write to temporary file", err)
+		log.Fatal("Cannot write to temporary file", err)
 	}
 	fileName := f.Name()
-    fmt.Printf("wrote snapshot to %s\n", fileName)
+	fmt.Printf("wrote snapshot to %s\n", fileName)
 	f.Sync()
 	return fileName, title
 }
 
 func isTitleElement(n *html.Node) bool {
-	return n.Type == html.ElementNode && n.Data == "title" 
+	return n.Type == html.ElementNode && n.Data == "title"
 }
 
 func traverse(n *html.Node) (string, bool) {
