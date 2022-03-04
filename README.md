@@ -6,6 +6,7 @@ Snapshot and sanitize webpages just-as-they-are using headless Firefox.
 
 ## Roadmap
 
+* Update project to Go Module Mode
 * Allow passing URI as argument on command line
 * Persist the Firefox instance and send it subsequent commands
 * HTTP API
