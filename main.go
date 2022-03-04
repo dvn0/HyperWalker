@@ -1,13 +1,13 @@
-//go:generate statik -src=./js
-
 package main
 
 import (
-	"bufio"
+	"embed"
+	"flag"
 	"fmt"
+	"io"
+	"io/fs"
 	"io/ioutil"
 	"log"
-	"io"
 	"net/http"
 	"os"
 	"os/exec"
@@ -15,13 +15,11 @@ import (
 )
 
 import (
-	"golang.org/x/net/html"
+	"github.com/kennygrant/sanitize"
+	"github.com/mitchellh/go-homedir"
 	marionette "github.com/njasm/marionette_client"
 	"github.com/thedevsaddam/gojsonq"
-	"github.com/mitchellh/go-homedir"
-	"github.com/rakyll/statik/fs"
-	"github.com/kennygrant/sanitize"
-	_ "./statik" // TODO: Replace with the absolute import path
+	"golang.org/x/net/html"
 )
 
 var client = marionette.NewClient()
@@ -63,17 +61,20 @@ func initClient() {
 }
 
 // We have to serve the JS scripts via HTTP
+
+//go:embed js
+var embededFiles embed.FS
+
 func serveScript() {
-	statikFS, err := fs.New()
+	fsys, err := fs.Sub(embededFiles, ".")
 	if err != nil {
-		log.Fatal(err)
+		panic(err)
 	}
-	http.Handle("/js/", http.StripPrefix("/js/", http.FileServer(statikFS)))
+	http.Handle("/js/", http.FileServer(http.FS(fsys)))
 	if err := http.ListenAndServe("127.0.0.1:61628", nil); err != nil {
 		log.Fatalf("Problem starting HTTP server. Go says: ", err)
 	}
 }
-
 
 func execute() (string, string) {
 	resp, err := http.Get("http://127.0.0.1:61628/js/exec.js")
