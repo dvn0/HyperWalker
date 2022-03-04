@@ -12,6 +12,7 @@ import (
 	"os"
 	"os/exec"
 	"strings"
+	"time"
 )
 
 import (
@@ -25,6 +26,10 @@ import (
 var client = marionette.NewClient()
 var userHome, err = homedir.Dir()
 
+func usage() {
+	fmt.Fprintln(os.Stderr, "hyperwalker -- fetch and freeze-dry webpages\nOptions:")
+	flag.PrintDefaults()
+}
 
 func main() {
 	logFile, err := os.OpenFile(userHome+"/.hyperwalker/logs/hyperwalker.log", os.O_RDWR|os.O_CREATE|os.O_APPEND, 0600)
@@ -38,26 +43,41 @@ func main() {
 	go spawnFf()
 	// Will block if we don't run concurrently
 	go serveScript()
-	initClient()
-	execute()
-	quit()
+
+	var (
+		urlString = flag.String("url", "", "URL to fetch")
+	)
+	log.SetFlags(log.Lshortfile)
+	flag.Usage = usage
+	flag.Parse()
+
+	if *urlString != "" {
+		fmt.Printf("Sleeping for 1 seconds before downloading %s", *urlString)
+		time.Sleep(1 * time.Second)
+		initClient(*urlString)
+		return
+	} else {
+		fmt.Println("URL required.")
+		return
+	}
 }
 
 // TODO: Check whether Firefox with marrionette is already running
 func spawnFf() {
-	ffProfile := exec.Command("firefox", "-no-remote", "-CreateProfile","hyperwalker")
+	ffProfile := exec.Command("firefox", "-no-remote", "-CreateProfile", "hyperwalker")
 	ffProfile.Start()
-	ffCmd := exec.Command("firefox", "-P", "hyperwalker", "-no-remote", "-headless"," -private-window", "-marionette")
+	ffCmd := exec.Command("firefox", "-P", "hyperwalker", "-no-remote", "-headless", " -private-window", "-marionette")
 	ffCmd.Start()
 }
 
-func initClient() {
-	reader := bufio.NewReader(os.Stdin)
-	fmt.Print("Navigate to (URI): ")
-	uri, _ := reader.ReadString('\n')
-	client.Connect("127.0.0.1", 2828) // this are the default marionette values for hostname, and port 
-	client.NewSession("", nil) // let marionette generate the Session ID with it's default Capabilities
-	client.Navigate(uri)
+func initClient(uri string) {
+	fmt.Println(string(uri))
+	client.Connect("127.0.0.1", 2828) // this are the default marionette values for hostname, and port
+	client.NewSession("", nil)        // let marionette generate the Session ID with it's default Capabilities
+	client.Navigate(string(uri))
+	execute()
+	time.Sleep(5 * time.Second)
+	quit()
 }
 
 // We have to serve the JS scripts via HTTP
