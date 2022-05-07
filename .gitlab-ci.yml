@@ -1,0 +1,13 @@
+before_script:
+    - wget --quiet https://github.com/earthly/earthly/releases/download/v0.6.14/earthly-linux-amd64 -O earthly
+    - chmod +x earthly
+    - export FORCE_COLOR=1
+    - ./earthly config global.disable_analytics true
+    - ./earthly config global.disable_log_sharing true
+    - ./earthly bootstrap
+
+earthly:
+  tags: [kvm]
+  stage: build
+  script:
+    - ./earthly --ci +all
