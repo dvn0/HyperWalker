@@ -68,9 +68,9 @@ func main() {
 
 // TODO: Check whether Firefox with marrionette is already running
 func spawnFf() {
-	ffProfile := exec.Command("firefox", "-no-remote", "-CreateProfile", "hyperwalker")
+	ffProfile := exec.Command("firefox", "-headless", "-CreateProfile", "hyperwalker")
 	ffProfile.Start()
-	ffCmd := exec.Command("firefox", "-P", "hyperwalker", "-no-remote", "-headless", " -private-window", "-marionette")
+	ffCmd := exec.Command("firefox", "-P", "hyperwalker", "-headless", " -private-window", "-marionette")
 	ffCmd.Start()
 }
 
@@ -79,9 +79,10 @@ func initClient(uri string) {
 	client.Connect("127.0.0.1", 2828) // this are the default marionette values for hostname, and port
 	client.NewSession("", nil)        // let marionette generate the Session ID with it's default Capabilities
 	client.Navigate(string(uri))
+	time.Sleep(5 * time.Second)
 	execute()
 	time.Sleep(5 * time.Second)
-	quit()
+	//quit()
 }
 
 // We have to serve the JS scripts via HTTP
