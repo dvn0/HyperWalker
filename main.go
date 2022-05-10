@@ -68,21 +68,25 @@ func main() {
 
 // TODO: Check whether Firefox with marrionette is already running
 func spawnFf() {
-	ffProfile := exec.Command("firefox", "-headless", "-CreateProfile", "hyperwalker")
+	// Create a new profile; If it already exists firefox will just exit silently.
+	ffProfile := exec.Command("firefox", "--headless", "--CreateProfile", "hyperwalker")
 	ffProfile.Start()
-	ffCmd := exec.Command("firefox", "-P", "hyperwalker", "-headless", " -private-window", "-marionette")
+	// Execute firefox with these arguments
+	ffCmd := exec.Command("firefox", "--headless", "--marionette", "--private-window", "-P", "hyperwalker")
 	ffCmd.Start()
 }
 
 func initClient(uri string) {
-	fmt.Println(string(uri))
+	time.Sleep(1 * time.Second)       // Let firefox warm-up before attempting to connect
 	client.Connect("127.0.0.1", 2828) // this are the default marionette values for hostname, and port
-	client.NewSession("", nil)        // let marionette generate the Session ID with it's default Capabilities
+	log.Println("Marrionette connected.")
+	client.NewSession("", nil) // let marionette generate the Session ID with its default Capabilities
+	log.Println("New Marionette session generated.")
 	client.Navigate(string(uri))
-	time.Sleep(5 * time.Second)
+	log.Printf("Navigating to %s", (string(uri)))
 	execute()
-	time.Sleep(5 * time.Second)
-	//quit()
+	client.Navigate("about:newtab")
+	quit()
 }
 
 // We have to serve the JS scripts via HTTP
