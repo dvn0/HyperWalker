@@ -11,20 +11,19 @@ import (
 	"net/http"
 	"os"
 	"os/exec"
+	"os/user"
+	"regexp"
 	"strings"
 	"time"
 )
 
 import (
-	"github.com/kennygrant/sanitize"
-	"github.com/mitchellh/go-homedir"
 	marionette "github.com/njasm/marionette_client"
 	"github.com/thedevsaddam/gojsonq"
 	"golang.org/x/net/html"
 )
 
 var client = marionette.NewClient()
-var userHome, err = homedir.Dir()
 
 func usage() {
 	fmt.Fprintln(os.Stderr, "hyperwalker -- fetch and freeze-dry webpages\nOptions:")
@@ -32,6 +31,11 @@ func usage() {
 }
 
 func main() {
+	user, err := user.Current()
+	if err != nil {
+		log.Fatalf(err.Error())
+	}
+	userHome := user.HomeDir
 	logFile, err := os.OpenFile(userHome+"/.hyperwalker/logs/hyperwalker.log", os.O_RDWR|os.O_CREATE|os.O_APPEND, 0600)
 	if err != nil {
 		log.Fatalf("error opening file: %v", err)
@@ -126,7 +130,11 @@ func execute() (string, string) {
 	if true {
 		fmt.Println("Saving Page: " + title)
 	}
-	sanTitle := sanitize.Path(title)
+	reg, err := regexp.Compile("[^A-Za-z0-9]+")
+	if err != nil {
+		log.Fatal(err)
+	}
+	sanTitle := reg.ReplaceAllString(title, "-")
 	/*; true {
 		fmt.Println(title)
 	} else {
