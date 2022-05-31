@@ -56,7 +56,7 @@ func main() {
 	flag.Parse()
 
 	if *urlString != "" {
-		fmt.Printf("Sleeping for 1 seconds before downloading %s", *urlString)
+		fmt.Printf("Sleeping for 1 seconds before downloading %s\n", *urlString)
 		time.Sleep(1 * time.Second)
 		initClient(*urlString)
 		return
@@ -72,7 +72,8 @@ func spawnFf() {
 	ffProfile := exec.Command("firefox", "--headless", "--CreateProfile", "hyperwalker")
 	ffProfile.Start()
 	// Execute firefox with these arguments
-	ffCmd := exec.Command("firefox", "--headless", "--marionette", "--private-window", "-P", "hyperwalker")
+	// TODO: make headless mode toggled by debug flag
+	ffCmd := exec.Command("firefox", "--marionette", "--headless", "--private-window", "-P", "hyperwalker")
 	ffCmd.Start()
 }
 
@@ -94,19 +95,30 @@ func initClient(uri string) {
 //go:embed js
 var embededFiles embed.FS
 
+func cors(fs http.Handler) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		// do your cors stuff
+		w.Header().Set("Access-Control-Allow-Origin", "*")
+		// return if you do not want the FileServer handle a specific request
+
+		fs.ServeHTTP(w, r)
+	}
+}
+
 func serveScript() {
 	fsys, err := fs.Sub(embededFiles, ".")
 	if err != nil {
 		panic(err)
 	}
-	http.Handle("/js/", http.FileServer(http.FS(fsys)))
+
+	http.Handle("/js/", cors(http.FileServer(http.FS(fsys))))
 	if err := http.ListenAndServe("127.0.0.1:61628", nil); err != nil {
 		log.Fatalf("Problem starting HTTP server. Go says: ", err)
 	}
 }
 
 func execute() (string, string) {
-	resp, err := http.Get("http://127.0.0.1:61628/js/exec.js")
+	resp, err := http.Get("http://127.0.0.1:61628/js/dist/freeze-dry.umd.js")
 	if err != nil {
 		panic(err)
 	}
@@ -116,7 +128,7 @@ func execute() (string, string) {
 		log.Fatalf("Something bad", err)
 	}
 
-	scriptstr := string(bodyBytes)
+	scriptstr := fmt.Sprintf("console.log('Here comes the big script...');\n%s\nconsole.log('Running freezeDry()'); return freezeDry.default();", string(bodyBytes))
 	args := []interface{}{}     // arguments to be passed to the function
 	timeoutint := 50000         // milliseconds
 	timeout := uint(timeoutint) // milliseconds
@@ -125,6 +137,7 @@ func execute() (string, string) {
 	if err != nil {
 		log.Fatal("Error executing script", err)
 	}
+
 	// HTML is returned as a JSON blob, so we must parse it
 	data := gojsonq.New().JSONString(snap.Value).Find("value")
 	//println(data.(string))

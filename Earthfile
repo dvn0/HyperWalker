@@ -8,10 +8,22 @@ deps:
     SAVE ARTIFACT go.mod AS LOCAL go.mod
     SAVE ARTIFACT go.sum AS LOCAL go.sum
 
+freeze-dry:
+    FROM node
+    #COPY freeze-dry /freeze-dry
+    RUN git clone https://github.com/WebMemex/freeze-dry -b customisation /freeze-dry
+    WORKDIR /freeze-dry
+    RUN ls -alh
+    RUN pwd
+    RUN npm install && \
+        npm run bundle
+    SAVE ARTIFACT dist AS LOCAL build/freeze-dry
+
 build:
     FROM +deps
     COPY main.go .
-    COPY js ./js/
+    RUN mkdir ./js/
+    COPY +freeze-dry/dist ./js/dist
     RUN CGO_ENABLED=0 go build -o build/hyperwalker main.go
     SAVE ARTIFACT build/hyperwalker AS LOCAL build/hyperwalker
 
