@@ -1,9 +1,5 @@
-github.com/kennygrant/sanitize v1.2.4 h1:gN25/otpP5vAsO2djbMhF/LQX6R7+O1TB4yv8NzpJ3o=
-github.com/kennygrant/sanitize v1.2.4/go.mod h1:LGsjYYtgxbetdg5owWB2mpgUL6e2nfw2eObZ0u0qvak=
-github.com/mitchellh/go-homedir v1.1.0 h1:lukF9ziXFxDFPkA1vsr5zpc1XuPDn/wFntq5mG+4E0Y=
-github.com/mitchellh/go-homedir v1.1.0/go.mod h1:SfyaCUpYCn1Vlf4IUYiD9fPX4A5wJrkLzIz1N1q0pr0=
-github.com/njasm/marionette_client v0.0.6 h1:H7aKpp0RwmorbRT+kQiEHhZ/MCZOZG+OI01wcwEXrQM=
-github.com/njasm/marionette_client v0.0.6/go.mod h1:MOrdVhbPgoZZ3u7W06ndtZ4bkdlDnmdn39hEVEN147g=
+github.com/njasm/marionette_client v0.0.7 h1:QImhlZ2GPGZeM9+thNErc3GKBFbtRwLBnQIpWFZTSjM=
+github.com/njasm/marionette_client v0.0.7/go.mod h1:MOrdVhbPgoZZ3u7W06ndtZ4bkdlDnmdn39hEVEN147g=
 github.com/rakyll/statik v0.1.7 h1:OF3QCZUuyPxuGEP7B4ypUa7sB/iHtqOTDYZXGM8KOdQ=
 github.com/rakyll/statik v0.1.7/go.mod h1:AlZONWzMtEnMs7W4e/1LURLiI49pIMmp6V9Unghqrcc=
 github.com/thedevsaddam/gojsonq v2.3.0+incompatible h1:i2lFTvGY4LvoZ2VUzedsFlRiyaWcJm3Uh6cQ9+HyQA8=
