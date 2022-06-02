@@ -1,29 +1,39 @@
 # HyperWalker
 
-> Hypertext organizer...
+> Hypertext grabber...
 
-Snapshot and sanitize webpages just-as-they-are using headless Firefox. 
+Snapshot and sanitize webpages just-as-they-are in a headless Firefox.
+
+Using the [Freeze-dry](https://github.com/WebMemex/freeze-dry) javascript library for self-contained HTML file snapshots.
 
 ## Roadmap
 
-* Update project to Go Module Mode
-* Allow passing URI as argument on command line
-* Persist the Firefox instance and send it subsequent commands
+* Nix Flake (Package Definition)
+* Debug mode
 * HTTP API
+* Make use of freeze-dry's customisation abilities
 
 ## Requirements
 
+* Firefox (in your path)
+* Go (to compile)
 
-* Firefox
-* Go
+* Earthly (https://earthly.dev - for building)
 
-## Install
+## Build & Run
 
 ```shell
+    $ earthly config global.disable_analytics true
+    $ earthly config global.disable_log_sharing true
+    $ earthly +build
+    $ ./build/hyperwalker -url https://en.wikipedia.org/wiki/Special:Random
+```
 
-    $ go get -v -d git.callpipe.com/dvn/hyperwalker
-    $ go get -v github.com/rakyll/statik
-    $ cd $GOPATH/src/git.callpipe.com/dvn/hyperwalker
-    $ go generate
-    $ go build -o hyperwalker main.go
+## Test
+
+Warning: This runs Firefox in a docker container and takes several minutes the first time around.
+
+```shell
+    $ earthly +firefox-image
+    $ earthly +application-test
 ```
