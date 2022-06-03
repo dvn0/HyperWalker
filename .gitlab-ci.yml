@@ -8,6 +8,16 @@ before_script:
     - rm -f ~/.docker/config.json
     - docker login -u ${CI_REGISTRY_USER} -p ${CI_REGISTRY_PASSWORD} ${CI_REGISTRY} 
 
+nix build:
+  image: nixos/nix
+  stage: build
+  before_script:
+    - echo "experimental-features = nix-command flakes" >> /etc/nix/nix.conf
+  script:
+    - nix-channel --update
+    - nix flake update
+    - nix build
+
 earthly build:
   tags: [kvm]
   stage: build
