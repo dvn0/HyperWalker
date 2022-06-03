@@ -1,11 +1,18 @@
-{ lib, buildGoModule, makeWrapper, firefox, version ? "unstable" }:
+{ lib, buildGoModule, nix-gitignore, makeWrapper, firefox, version ? "unstable"
+}:
 
-buildGoModule {
-  pname = "hyperwalker";
+let freezeDry = ./freeze-dry.umd.js;
+
+in buildGoModule rec {
+  pname = "HyperWalker";
   inherit version;
+
   # In 'nix develop', we don't need a copy of the source tree
   # in the Nix store.
-  src = ./.;
+  src = nix-gitignore.gitignoreSource ''
+    /*.nix
+    /flake.lock
+  '' ./.;
 
   # This hash locks the dependencies of this package. It is
   # necessary because of how Go requires network access to resolve
@@ -19,9 +26,14 @@ buildGoModule {
 
   vendorSha256 = "sha256-yWl8xHSU480B9nkMGaFrJ0L+MmgmM7sLIvluub9S02c=";
 
+  prePatch = ''
+    mkdir -p js/dist
+    cp ${freezeDry} js/dist/freeze-dry.umd.js
+  '';
+
   nativeBuildInputs = [ makeWrapper ];
   postInstall = ''
-    wrapProgram $out/bin/hyperwalker \
+    wrapProgram $out/bin/${pname} \
       --prefix PATH : ${lib.makeBinPath [ firefox ]}
   '';
 }

@@ -4,3 +4,6 @@ hyperwalker
 build/
 
 test-snapshot.html
+
+result
+result-*
