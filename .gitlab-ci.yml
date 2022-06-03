@@ -12,15 +12,20 @@ earthly build:
   tags: [kvm]
   stage: build
   script:
-    - ./earthly --ci --push +build
-    - ./earthly --ci --push +docker
+    - ./earthly --ci --output --push +build
+    - ./earthly --ci --output --push +docker
+    - ls
+  artifacts:
+    name: "$CI_JOB_NAME"
+    paths:
+      - build/
 
 earthly test:
   tags: [kvm]
   stage: test
   script:
-    - ./earthly --ci --push +firefox-image
-    - ./earthly --ci --push +application-test
+    - ./earthly --ci --output --push +firefox-image
+    - ./earthly --ci --output --push +application-test
   artifacts:
     paths:
       - test-snapshot.html
