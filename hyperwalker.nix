@@ -1,7 +1,7 @@
-{ lib, buildGoModule, nix-gitignore, makeWrapper, firefox, version ? "unstable"
+{ lib, fetchurl, buildGoModule, nix-gitignore, makeWrapper, firefox, version ? "unstable"
 }:
 
-let freezeDry = ./freeze-dry.umd.js;
+let freezeDry = fetchurl { url = "https://git.callpipe.com/dvn/hyperwalker/-/jobs/16551/artifacts/raw/build/freeze-dry/freeze-dry.umd.js"; hash = "sha256-Vc1vLLllFwekmDcyeB+PF9mYTvJFd3WLBAERORv9ER8="; };
 
 in buildGoModule rec {
   pname = "HyperWalker";
