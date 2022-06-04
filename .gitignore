@@ -1,7 +1,8 @@
 # Presumed bin name
-hyperwalker
+HyperWalker
 
 build/
+js/
 
 test-snapshot.html
 
