@@ -33,9 +33,30 @@ earthly build:
 earthly test:
   tags: [kvm]
   stage: test
+  needs: ["earthly build"]
   script:
     - ./earthly --ci --output --push +firefox-image
     - ./earthly --ci --output --push +application-test
+  artifacts:
+    paths:
+      - test-snapshot.html
+
+nix test:
+  image: nixos/nix
+  stage: test
+  needs: ["nix build"]
+  before_script:
+    - echo "experimental-features = nix-command flakes" >> /etc/nix/nix.conf
+  script:
+    - nix-channel --update
+    - nix flake update
+    - mkdir -p $HOME/.hyperwalker/logs
+    - nix run . -- -url https://en.wikipedia.org/wiki/Special:Random || true ;
+      sleep 5 ;
+      nix run . -- -url https://en.wikipedia.org/wiki/Special:Random || true ;
+      sleep 5 ;
+      nix run . -- -url https://en.wikipedia.org/wiki/Special:Random
+    - mv /tmp/*hyperwalker*.html test-snapshot.html
   artifacts:
     paths:
       - test-snapshot.html
