@@ -51,11 +51,7 @@ nix test:
     - nix-channel --update
     - nix flake update
     - mkdir -p $HOME/.hyperwalker/logs
-    - nix run . -- -url https://en.wikipedia.org/wiki/Special:Random || true ;
-      sleep 5 ;
-      nix run . -- -url https://en.wikipedia.org/wiki/Special:Random || true ;
-      sleep 5 ;
-      nix run . -- -url https://en.wikipedia.org/wiki/Special:Random
+    - nix run . -- -url https://en.wikipedia.org/wiki/Special:Random
     - mv /tmp/*hyperwalker*.html test-snapshot.html
   artifacts:
     paths:

@@ -8,10 +8,12 @@ import (
 	"io/fs"
 	"io/ioutil"
 	"log"
+	"net"
 	"net/http"
 	"os"
 	"os/exec"
 	"os/user"
+	"path/filepath"
 	"regexp"
 	"strings"
 	"time"
@@ -24,6 +26,7 @@ import (
 )
 
 var client = marionette.NewClient()
+var userHome = getUserHomePath()
 
 func usage() {
 	fmt.Fprintln(os.Stderr, "hyperwalker -- fetch and freeze-dry webpages\nOptions:")
@@ -31,11 +34,6 @@ func usage() {
 }
 
 func main() {
-	user, err := user.Current()
-	if err != nil {
-		log.Fatalf(err.Error())
-	}
-	userHome := user.HomeDir
 	logFile, err := os.OpenFile(userHome+"/.hyperwalker/logs/hyperwalker.log", os.O_RDWR|os.O_CREATE|os.O_APPEND, 0600)
 	if err != nil {
 		log.Fatalf("error opening file: %v", err)
@@ -44,20 +42,18 @@ func main() {
 
 	log.SetOutput(logFile)
 	log.Println("HyperWalker is running")
-	go spawnFf()
+	spawnFf()
 	// Will block if we don't run concurrently
 	go serveScript()
 
 	var (
 		urlString = flag.String("url", "", "URL to fetch")
 	)
-	log.SetFlags(log.Lshortfile)
 	flag.Usage = usage
 	flag.Parse()
 
 	if *urlString != "" {
-		fmt.Printf("Sleeping for 1 seconds before downloading %s\n", *urlString)
-		time.Sleep(1 * time.Second)
+		fmt.Printf("Retrieving %s\n", *urlString)
 		initClient(*urlString)
 		return
 	} else {
@@ -68,23 +64,57 @@ func main() {
 
 // TODO: Check whether Firefox with marrionette is already running
 func spawnFf() {
-	// Create a new profile; If it already exists firefox will just exit silently.
-	ffProfile := exec.Command("firefox", "--headless", "--CreateProfile", "hyperwalker")
-	ffProfile.Start()
-	// Execute firefox with these arguments
-	// TODO: make headless mode toggled by debug flag
-	ffCmd := exec.Command("firefox", "--marionette", "--headless", "--private-window", "-P", "hyperwalker")
-	ffCmd.Start()
+	// Check if Firefox profile exists:
+
+	checkProfile, err := filepath.Glob(userHome + "/.mozilla/firefox/*.hyperwalker")
+	if err != nil {
+		log.Fatalf(err.Error())
+	}
+	if len(checkProfile) == 0 {
+		// Create a new profile:
+		log.Printf("Creating new Firefox profile in: %s", userHome+"/.mozilla/firefox/")
+		ffProfile := exec.Command("firefox", "--headless", "--CreateProfile", "hyperwalker")
+		ffProfile.Start()
+		// Execute firefox with these arguments
+		// TODO: make headless mode toggled by debug flag
+		log.Println("Opening a headless Firefox.")
+		time.Sleep(2 * time.Second) // Sleep to wait for profile creation to complete
+		ffCmd := exec.Command("firefox", "--marionette", "--headless", "--private-window", "-P", "hyperwalker")
+		ffCmd.Start()
+	} else {
+		// Execute firefox with these arguments:
+		// TODO: make headless mode toggled by debug flag
+		log.Println("Opening a headless Firefox.")
+		ffCmd := exec.Command("firefox", "--marionette", "--headless", "--private-window", "-P", "hyperwalker")
+		ffCmd.Start()
+	}
+}
+
+func raw_connect(host string, port string) error {
+	timeout := time.Second
+	conn, err := net.DialTimeout("tcp", net.JoinHostPort(host, port), timeout)
+	if conn != nil {
+		defer conn.Close()
+		log.Println("Connected to", net.JoinHostPort(host, port))
+	}
+	return err
 }
 
 func initClient(uri string) {
-	time.Sleep(1 * time.Second)       // Let firefox warm-up before attempting to connect
+	for connectStatus := raw_connect("127.0.0.1", "2828"); connectStatus != nil; time.Sleep(1 * time.Second) {
+		connectStatus := raw_connect("127.0.0.1", "2828")
+		if connectStatus != nil {
+			log.Println("Waiting for Firefox to ready the marionette server...")
+		} else {
+			break
+		}
+	}
 	client.Connect("127.0.0.1", 2828) // this are the default marionette values for hostname, and port
 	log.Println("Marrionette connected.")
 	client.NewSession("", nil) // let marionette generate the Session ID with its default Capabilities
 	log.Println("New Marionette session generated.")
-	client.Navigate(string(uri))
-	log.Printf("Navigating to %s", (string(uri)))
+	client.Navigate(uri)
+	log.Printf("Navigating to %s", uri)
 	execute()
 	client.Navigate("about:newtab")
 	quit()
@@ -209,6 +239,14 @@ func screenshot() {
 		log.Fatal("wtf", err)
 	}
 	fmt.Println(screenshot)
+}
+
+func getUserHomePath() string {
+	user, err := user.Current()
+	if err != nil {
+		log.Fatalf(err.Error())
+	}
+	return user.HomeDir
 }
 
 // This makes Firefox quit

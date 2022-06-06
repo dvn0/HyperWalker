@@ -42,8 +42,8 @@ docker:
 application-test:
     FROM +docker
     RUN pwd && ./hyperwalker
-    RUN ./hyperwalker -url https://en.wikipedia.org/wiki/Special:Random ; sleep 5 ; ./hyperwalker -url https://en.wikipedia.org/wiki/Special:Random ; ps aux | grep marionette | grep -v grep ; sleep 5 ; ./hyperwalker -url https://en.wikipedia.org/wiki/Special:Random
-    RUN cat $HOME/.hyperwalker/logs/hyperwalker.log
+    RUN ./hyperwalker -url https://en.wikipedia.org/wiki/Special:Random ; cat $HOME/.hyperwalker/logs/hyperwalker.log
+    RUN ls -alh $HOME/.mozilla/firefox | grep "\.hyperwalker"
     RUN mv /tmp/*hyperwalker*.html test-snapshot.html
     SAVE ARTIFACT test-snapshot.html AS LOCAL test-snapshot.html
 
