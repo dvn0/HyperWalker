@@ -23,8 +23,6 @@ Using the [Freeze-dry](https://github.com/WebMemex/freeze-dry) javascript librar
 
 ## Build & Run
 
-***Current Major Bug: HyperWalker will typically segfault the first time it's run. Try running it again, if this happens.***
-
 **Build & Run Manually**
 
 ```shell
