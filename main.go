@@ -90,7 +90,7 @@ func spawnFf() {
 	}
 }
 
-func raw_connect(host string, port string) error {
+func tcpConnect(host string, port string) error {
 	timeout := time.Second
 	conn, err := net.DialTimeout("tcp", net.JoinHostPort(host, port), timeout)
 	if conn != nil {
@@ -101,10 +101,11 @@ func raw_connect(host string, port string) error {
 }
 
 func initClient(uri string) {
-	for connectStatus := raw_connect("127.0.0.1", "2828"); connectStatus != nil; time.Sleep(1 * time.Second) {
-		connectStatus := raw_connect("127.0.0.1", "2828")
+	for {
+		connectStatus := tcpConnect("127.0.0.1", "2828")
 		if connectStatus != nil {
-			log.Println("Waiting for Firefox to ready the marionette server...")
+			log.Println("Waiting 1 second to try to connect to Firefox's marionette server...")
+			time.Sleep(1 * time.Second)
 		} else {
 			break
 		}
